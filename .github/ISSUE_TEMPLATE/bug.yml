@@ -1,0 +1,40 @@
+name: Bug report
+description: Report a reproducible problem in Gabby.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Share a minimal reproduction. Do not include credentials, prompts containing secrets, or private user data.
+  - type: input
+    id: version
+    attributes:
+      label: Gabby version
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: 3.12.0
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      render: python
+    validations:
+      required: true

@@ -1,0 +1,32 @@
+default_language_version:
+  python: python3.11
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+  - repo: local
+    hooks:
+      - id: license-headers
+        name: license headers
+        entry: python scripts/check_license_headers.py
+        language: system
+        pass_filenames: false
+      - id: documentation
+        name: documentation policy
+        entry: python scripts/check_documentation.py
+        language: system
+        pass_filenames: false
+      - id: workflow-policy
+        name: workflow policy
+        entry: python scripts/check_workflows.py
+        language: system
+        pass_filenames: false
+      - id: ruff
+        name: ruff
+        entry: ruff check
+        language: system
+        types: [python]

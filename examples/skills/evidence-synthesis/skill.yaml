@@ -1,0 +1,8 @@
+name: evidence-synthesis
+description: Summarize evidence supplied with the current request.
+instructions: |
+  Identify the claims the caller needs answered. Compare the supplied sources, preserve source
+  labels, distinguish direct evidence from inference, and call out material disagreement or gaps.
+  Do not imply that you searched sources outside the supplied context.
+triggers: [research, evidence, source, summarize]
+tools: []

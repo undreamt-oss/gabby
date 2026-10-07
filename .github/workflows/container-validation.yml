@@ -1,0 +1,42 @@
+name: Validate hosted container
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  deployment-container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GABBY_API_TOKEN: ci-container-smoke-token
+      HF_TOKEN: ci-provider-placeholder
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate Compose deployment configuration
+        run: docker compose -f deploy/compose.yaml config --quiet
+      - name: Build and start the hardened hosted agent
+        run: docker compose -f deploy/compose.yaml --project-name gabby-ci up --build --detach --wait
+      - name: Verify identity, health, and API authentication
+        run: |
+          container_id="$(docker compose -f deploy/compose.yaml --project-name gabby-ci ps -q gabby)"
+          test "$(docker inspect --format '{{.Config.User}}' "$container_id")" = "10001:10001"
+          test "$(docker inspect --format '{{.HostConfig.ReadonlyRootfs}}' "$container_id")" = "true"
+          test "$(docker inspect --format '{{.HostConfig.PidsLimit}}' "$container_id")" = "128"
+          test "$(docker inspect --format '{{.HostConfig.Memory}}' "$container_id")" = "1073741824"
+          test "$(docker inspect --format '{{.HostConfig.NanoCpus}}' "$container_id")" = "1000000000"
+          test "$(docker inspect --format '{{json .HostConfig.CapDrop}}' "$container_id")" = '["ALL"]'
+          test "$(docker inspect --format '{{json .HostConfig.SecurityOpt}}' "$container_id")" = '["no-new-privileges:true"]'
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8787/health)"
+          test "$status" = "200"
+          status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' http://127.0.0.1:8787/v1/agents/research-synthesizer/run --header 'Content-Type: application/json' --data '{"input":"smoke check","context":{}}')"
+          test "$status" = "401"
+      - name: Validate Nginx ingress limits against the hosted agent
+        run: python scripts/check_nginx_ingress.py
+      - name: Stop the deployment
+        if: always()
+        run: docker compose -f deploy/compose.yaml --project-name gabby-ci down --volumes --remove-orphans

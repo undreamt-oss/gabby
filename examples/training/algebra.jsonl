@@ -1,0 +1,3 @@
+{"messages":[{"role":"user","content":"What is 17 plus 25?"},{"role":"assistant","content":"42"}]}
+{"messages":[{"role":"user","content":"What is 8 times 9?"},{"role":"assistant","content":"72"}]}
+{"messages":[{"role":"user","content":"What is 144 divided by 12?"},{"role":"assistant","content":"12"}]}

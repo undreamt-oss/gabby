@@ -1,0 +1,46 @@
+# Copyright 2026-present Gabby Contributors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Opt-in live acceptance for Jina reranking."""
+
+from __future__ import annotations
+
+import os
+
+import pytest
+
+from gabby import Document, JinaReranker
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_jina_reranker_live_contract() -> None:
+    run_flag = "GABBY_RUN_JINA_RERANK_INTEGRATION"
+    if os.environ.get(run_flag) != "1":
+        pytest.skip(f"set {run_flag}=1 to call the Jina reranking API")
+    if not os.environ.get("JINA_API_KEY"):
+        pytest.fail("set JINA_API_KEY in the host environment for live Jina acceptance")
+
+    reranker = JinaReranker(model=os.environ.get("GABBY_JINA_RERANK_MODEL", "jina-reranker-v3.5"))
+    documents = [
+        Document("Reset your account password from Security settings.", id="reset"),
+        Document("The weather forecast predicts scattered rain this weekend.", id="weather"),
+    ]
+    try:
+        result = await reranker.rerank("How do I reset my account password?", documents, limit=2)
+    finally:
+        await reranker.aclose()
+
+    assert len(result) == 2
+    assert {document.id for document in result} == {"reset", "weather"}
+    assert result[0].id == "reset"
