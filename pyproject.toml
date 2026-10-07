@@ -64,7 +64,7 @@ dev = [
   "build>=1.2,<2",
   "pip-audit>=2.10,<3",
   "pypdf>=6.19,<7",
-  "uv==0.12.13",
+  "uv==0.12.23",
 ]
 
 [tool.pytest.ini_options]
