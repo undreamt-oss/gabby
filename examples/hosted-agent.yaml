@@ -2,8 +2,8 @@ name: research-synthesizer
 description: Summarize caller-supplied research material with source-aware answers.
 
 model:
-  provider: huggingface
-  model: Qwen/Qwen3-8B:fastest
+  provider: gemini
+  model: gemini-3.5-flash-lite
 
 environment:
   type: research
