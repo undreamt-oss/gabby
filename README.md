@@ -6,7 +6,10 @@
 
 Gabby executes configured AI agents within explicit runtime boundaries. It manages model calls, skills, tools, knowledge retrieval, verification, and policies for each request, then returns a result without owning the consuming application's conversation history or durable user state.
 
-**Python · Async-first · FastAPI · Model-agnostic · Apache-2.0**
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15741/badge)](https://www.bestpractices.dev/projects/15741)
 
 [Documentation](docs/index.md) · [Architecture](docs/ARCHITECTURE.md) · [Quick start](#quick-start) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
