@@ -42,7 +42,7 @@ gabby = "gabby.cli:main"
 server = ["uvicorn>=0.34,<1"]
 auth = ["PyJWT[crypto]>=2.13,<3"]
 pdf = ["pypdf>=6.19,<7"]
-ocr = ["Pillow>=11,<13", "pytesseract>=0.3.13,<1"]
+ocr = ["Pillow>=11,<14", "pytesseract>=0.3.13,<1"]
 pdf-ocr = ["pypdf[image]>=6.19,<7", "pypdfium2>=5.13,<6", "pytesseract>=0.3.13,<1"]
 parquet = ["pyarrow>=23,<26"]
 transformers = ["transformers>=5.18,<6"]
