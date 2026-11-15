@@ -1205,7 +1205,14 @@ async def test_fastapi_sse_keepalive_and_disconnect_cancel_provider_stream(
 
     async def send(message: Message) -> None:
         sent.append(message)
-        if message["type"] == "http.response.body" and b": keepalive" in message.get("body", b""):
+        if message["type"] != "http.response.body":
+            return
+        streamed = b"".join(
+            item.get("body", b"") for item in sent if item["type"] == "http.response.body"
+        )
+        if all(
+            marker in streamed for marker in (b"event: run_started", b"first chunk", b": keepalive")
+        ):
             disconnect.set()
 
     scope = cast(
