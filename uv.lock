@@ -1026,7 +1026,7 @@ wheels = [
 
 [[package]]
 name = "gabby-ai"
-version = "0.1.0b1"
+version = "0.1.0b3"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },

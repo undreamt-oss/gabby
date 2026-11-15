@@ -94,8 +94,8 @@ roadmap and scorecard separate implementation from release evidence.
 
 ## Release status
 
-Gabby is pre-1.0 beta software (`0.1.0b1`). Local tests and static checks establish only the
+Gabby is pre-1.0 beta software (`0.1.0b3`). Local tests and static checks establish only the
 behaviors they exercise; they do not certify a hosted deployment, every model/provider combination,
 or every container host and engine. Review the threat model and scorecard before using sensitive
 data or making production claims. See the
-[0.1.0 beta release notes](../CHANGELOG.md#planned-010-beta-010b1) for the scope of this pre-release.
+[0.1.0 beta release notes](../CHANGELOG.md#planned-010-beta-010b3) for the scope of this pre-release.

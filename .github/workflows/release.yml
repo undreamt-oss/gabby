@@ -89,7 +89,10 @@ jobs:
         run: uv sync --frozen --group dev --extra server --extra auth --extra skill-signing --python '${{ matrix.python-version }}'
       - if: runner.os == 'Windows'
         run: uv sync --frozen --group dev --extra server --extra auth --extra skill-signing --extra windows-sandbox --python '${{ matrix.python-version }}'
-      - run: uv run --no-sync pytest --cov=gabby --cov-report=term-missing
+      - if: runner.os == 'Linux'
+        run: uv run --no-sync pytest --cov=gabby --cov-report=term-missing
+      - if: runner.os != 'Linux'
+        run: uv run --no-sync pytest
 
   sandbox-live:
     runs-on: ubuntu-24.04
