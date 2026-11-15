@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import AsyncIterator, Sequence
+from dataclasses import replace
 from typing import Any
 
 from .config import DEFAULT_MAX_MODEL_REQUEST_BYTES, DEFAULT_MAX_MODEL_RESPONSE_BYTES
@@ -30,7 +31,7 @@ from .models import (
     ensure_model_request_size,
     ensure_model_response_size,
 )
-from .payload_filters import PayloadFilter
+from .payload_filters import DefaultPayloadFilter, PayloadFilter
 
 
 async def _apply_filters_request(
@@ -74,8 +75,9 @@ async def _apply_filters_response(
 class FilteredModelProvider:
     """Transparent provider wrapper that filters every request and response payload.
 
-    Streaming calls are buffered while filters run so no text or partial tool arguments escape
-    before response filters approve the complete model response.
+    The built-in default filter redacts each text delta as it arrives. Custom response filters are
+    buffered until the complete response is available so no unapproved text or partial tool
+    arguments escape before validation.
     """
 
     def __init__(
@@ -205,8 +207,12 @@ class FilteredModelProvider:
             if max_response_bytes is not None
             else DEFAULT_MAX_MODEL_RESPONSE_BYTES
         )
+        stream_default_filter = (
+            len(self._filters) == 1 and type(self._filters[0]) is DefaultPayloadFilter
+        )
         deltas: list[ModelStreamDelta] = []
         used_bytes = 0
+        emitted_bytes = 0
         async for delta in method(**kwargs):
             if not isinstance(delta, ModelStreamDelta):
                 raise TypeError("model provider returned a malformed stream delta")
@@ -219,7 +225,28 @@ class FilteredModelProvider:
                 raise ModelResponseSizeError(
                     f"Model response exceeded max_model_response_bytes={response_limit}"
                 )
-            deltas.append(delta)
+            if stream_default_filter:
+                if delta.content_delta is not None:
+                    filtered_response = await _apply_filters_response(
+                        self._filters,
+                        response=ModelResponse(content=delta.content_delta),
+                        purpose=self._purpose,
+                    )
+                    delta = replace(delta, content_delta=filtered_response.content)
+                emitted_bytes += _stream_delta_bytes(delta, response_limit)
+                if emitted_bytes > response_limit:
+                    raise ModelResponseSizeError(
+                        f"Model response exceeded max_model_response_bytes={response_limit}"
+                    )
+                yield delta
+            elif self._filters:
+                deltas.append(delta)
+            else:
+                # With no filters there is nothing to approve at end-of-stream. Forward each
+                # bounded delta so retries and client cancellation retain their stream semantics.
+                yield delta
+        if not self._filters or stream_default_filter:
+            return
         response = await _apply_filters_response(
             self._filters, response=_response_from_deltas(deltas), purpose=self._purpose
         )

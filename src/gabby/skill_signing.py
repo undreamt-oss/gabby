@@ -29,6 +29,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from ._file_security import opened_file_matches_path
 from .skill_packages import (
     _MAX_PACKAGE_ARCHIVE_BYTES,
     _PACKAGE_MANIFEST,
@@ -64,9 +65,7 @@ def sign_skill_package(
     try:
         from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
     except ImportError:
-        raise SkillPackageError(
-            "Install gabby-ai[skill-signing] to sign skill packages"
-        ) from None
+        raise SkillPackageError("Install gabby-ai[skill-signing] to sign skill packages") from None
     try:
         signer = Ed25519PrivateKey.from_private_bytes(private_key)
         digest = _hash_file(archive_path)
@@ -220,10 +219,8 @@ def _read_bounded_signature_file(path: Path) -> bytes:
     with os.fdopen(descriptor, "rb") as handle:
         opened_metadata = os.fstat(handle.fileno())
         if (
-            not stat.S_ISREG(opened_metadata.st_mode)
+            not opened_file_matches_path(metadata, opened_metadata)
             or opened_metadata.st_size > _MAX_SIGNATURE_BYTES
-            or opened_metadata.st_dev != metadata.st_dev
-            or opened_metadata.st_ino != metadata.st_ino
         ):
             raise SkillPackageError("Skill signature file changed while it was opened")
         encoded = handle.read(_MAX_SIGNATURE_BYTES + 1)

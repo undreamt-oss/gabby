@@ -25,6 +25,7 @@ from pathlib import Path
 from types import MappingProxyType
 from typing import Protocol, runtime_checkable
 
+from ._file_security import opened_file_matches_path
 from .config import ConfigError, SkillDefinition
 from .skill_packages import SkillPackageError, verify_installed_skill
 
@@ -101,7 +102,9 @@ def load_skill_trust_keys(directory: str | Path) -> dict[str, bytes]:
                 if _KEY_ID.fullmatch(key_id) is None:
                     raise ConfigError("Skill trust key filenames must use KEY_ID.pub syntax")
                 path = root / entry.name
-                metadata = entry.stat(follow_symlinks=False)
+                # Query the path directly instead of relying on DirEntry's cached stat data;
+                # some Windows filesystems do not provide a comparable file ID there.
+                metadata = os.stat(path, follow_symlinks=False)
                 if not stat.S_ISREG(metadata.st_mode) or metadata.st_size != 32:
                     raise ConfigError(f"Trusted Ed25519 key {key_id!r} must be a 32-byte file")
                 flags = (
@@ -113,11 +116,7 @@ def load_skill_trust_keys(directory: str | Path) -> dict[str, bytes]:
                 descriptor = os.open(path, flags)
                 with os.fdopen(descriptor, "rb") as handle:
                     opened_metadata = os.fstat(handle.fileno())
-                    if (
-                        not stat.S_ISREG(opened_metadata.st_mode)
-                        or opened_metadata.st_dev != metadata.st_dev
-                        or opened_metadata.st_ino != metadata.st_ino
-                    ):
+                    if not opened_file_matches_path(metadata, opened_metadata):
                         raise ConfigError(f"Trusted Ed25519 key {key_id!r} changed while loading")
                     key = handle.read(33)
                 if len(key) != 32:

@@ -88,14 +88,41 @@ async def test_default_filter_rejects_direct_prompt_override_before_provider_cal
 
 
 @pytest.mark.asyncio
-async def test_stream_filter_buffers_text_until_redaction_finishes() -> None:
-    model = FilterTestModel("Contact person@example.com for help")
+async def test_default_filter_redacts_each_streamed_text_delta() -> None:
+    class ChunkedFilterModel(FilterTestModel):
+        async def stream(self, **kwargs: Any) -> Any:
+            self.calls.append(kwargs)
+            yield ModelStreamDelta(content_delta="Contact ")
+            yield ModelStreamDelta(content_delta="person@example.com")
+            yield ModelStreamDelta(content_delta=" for help")
+            yield ModelStreamDelta(finish_reason="stop")
+
+    model = ChunkedFilterModel("unused")
     agent = _agent(model)
     emitted = [event async for event in agent.astream("Please draft a response")]
 
-    text = "".join(event.data["text"] for event in emitted if event.type == "text_delta")
+    deltas = [event.data["text"] for event in emitted if event.type == "text_delta"]
+    text = "".join(deltas)
     assert "person@example.com" not in text
     assert "[REDACTED_EMAIL]" in text
+    assert deltas == ["Contact ", "[REDACTED_EMAIL]", " for help"]
+
+
+@pytest.mark.asyncio
+async def test_provider_without_response_filters_forwards_stream_deltas() -> None:
+    provider = FilteredModelProvider(FilterTestModel("hello"), [], purpose="test")
+
+    deltas = [
+        delta
+        async for delta in provider.stream(
+            messages=[{"role": "user", "content": "hello"}],
+            tools=[],
+            model="filter-test",
+        )
+    ]
+
+    assert [delta.content_delta for delta in deltas] == ["hello"]
+    assert deltas[0].finish_reason == "stop"
 
 
 @pytest.mark.asyncio

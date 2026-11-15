@@ -31,6 +31,7 @@ from typing import Any
 
 import yaml
 
+from ._file_security import opened_file_matches_path
 from .agent import Agent
 from .config import (
     AgentDefinition,
@@ -898,11 +899,7 @@ def _load_trusted_skill_keys(entries: list[str]) -> dict[str, bytes]:
             descriptor = os.open(path, flags)
             with os.fdopen(descriptor, "rb") as handle:
                 opened_metadata = os.fstat(handle.fileno())
-                if (
-                    not stat.S_ISREG(opened_metadata.st_mode)
-                    or opened_metadata.st_dev != metadata.st_dev
-                    or opened_metadata.st_ino != metadata.st_ino
-                ):
+                if not opened_file_matches_path(metadata, opened_metadata):
                     raise ConfigError(f"Trusted public key {key_id!r} changed while loading")
                 key = handle.read(33)
         except ConfigError:

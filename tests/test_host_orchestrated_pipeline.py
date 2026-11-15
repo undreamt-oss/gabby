@@ -18,9 +18,9 @@ from __future__ import annotations
 
 import asyncio
 from collections import Counter
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -154,7 +154,7 @@ class _FakeClient:
             metadata={},
         )
 
-    async def astream(self, *_args: Any, **_kwargs: Any):
+    async def astream(self, *_args: Any, **_kwargs: Any) -> AsyncIterator[SimpleNamespace]:
         self.gateway.calls.append(self.worker)
         chunks = self.gateway.synthesis_chunks
         if chunks is None:
@@ -186,6 +186,7 @@ def _make_pipeline(
     fake_retriever = retriever or _FakeRetriever()
     fake_checkpoints = checkpoints or _MemoryCheckpoints()
     monkeypatch.setattr(pipeline_module, "GabbyClient", fake_gateway.client)
+    worker_names = cast(tuple[WorkerName, ...], ("triage", "rag", "analyst", "synthesis"))
     endpoints: dict[WorkerName, AgentEndpoint] = {
         worker: AgentEndpoint(
             base_url=f"https://{worker}.example.test",
@@ -193,7 +194,7 @@ def _make_pipeline(
             audience=f"gabby:{worker}",
             revision="revision-1",
         )
-        for worker in ("triage", "rag", "analyst", "synthesis")
+        for worker in worker_names
     }
     pipeline = HostOrchestratedPipeline(
         endpoints=endpoints,

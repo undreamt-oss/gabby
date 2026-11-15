@@ -52,6 +52,7 @@ def test_docker_api_socket_uses_configured_path(
     assert _docker_api_socket() == socket_path.resolve()
 
 
+@pytest.mark.skipif(os.name != "posix", reason="Unix Docker sockets are POSIX-only")
 def test_docker_api_socket_uses_unix_docker_host(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("GABBY_DOCKER_API_SOCKET", raising=False)
     monkeypatch.setenv("DOCKER_HOST", "unix:///run/user/1000/docker.sock")

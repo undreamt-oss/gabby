@@ -109,16 +109,28 @@ from examples.host_orchestrated_pipeline import (
 pipeline = HostOrchestratedPipeline(
     endpoints={
         "triage": AgentEndpoint(
-            "https://gabby-triage.internal", "pipeline-triage", "gabby-triage", "sha256:triage-config"
+            "https://gabby-triage.internal",
+            "pipeline-triage",
+            "gabby-triage",
+            "sha256:triage-config",
         ),
         "rag": AgentEndpoint(
-            "https://gabby-knowledge.internal", "pipeline-knowledge-worker", "gabby-rag", "sha256:rag-config"
+            "https://gabby-knowledge.internal",
+            "pipeline-knowledge-worker",
+            "gabby-rag",
+            "sha256:rag-config",
         ),
         "analyst": AgentEndpoint(
-            "https://gabby-finance.internal", "pipeline-finance-analyst", "gabby-analyst", "sha256:analyst-config"
+            "https://gabby-finance.internal",
+            "pipeline-finance-analyst",
+            "gabby-analyst",
+            "sha256:analyst-config",
         ),
         "synthesis": AgentEndpoint(
-            "https://gabby-synthesis.internal", "pipeline-synthesis", "gabby-synthesis", "sha256:synthesis-config"
+            "https://gabby-synthesis.internal",
+            "pipeline-synthesis",
+            "gabby-synthesis",
+            "sha256:synthesis-config",
         ),
     },
     token_issuer=host_token_issuer,

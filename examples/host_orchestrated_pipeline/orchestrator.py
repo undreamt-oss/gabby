@@ -27,7 +27,7 @@ import math
 from collections import deque
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, cast
 
 from gabby import (
     GabbyAPIError,
@@ -37,6 +37,8 @@ from gabby import (
 from gabby.host_context import HostRAGSnippet, HostSessionSummary, HostUserPreferences
 
 WorkerName = Literal["triage", "rag", "analyst", "synthesis"]
+WorkerStatus = Literal["completed", "not_requested", "not_authorized", "unavailable"]
+PipelineStatus = Literal["completed", "partial", "failed"]
 WORKFLOW_VERSION = "host-pipeline-v1"
 MAX_PLAN_TEXT_CHARS = 2_000
 MAX_RAG_SNIPPETS = 5
@@ -79,7 +81,7 @@ class AgentEndpoint:
 class WorkerOutcome:
     """A bounded result or safe failure status from one specialist stage."""
 
-    status: Literal["completed", "not_requested", "not_authorized", "unavailable"]
+    status: WorkerStatus
     output: str = ""
     trace_id: str | None = None
     error_type: str | None = None
@@ -98,7 +100,7 @@ class PipelineResult:
     """Final host-owned workflow result; Gabby keeps none of this between calls."""
 
     execution_id: str
-    status: Literal["completed", "partial", "failed"]
+    status: PipelineStatus
     output: str
     trace_ids: Mapping[str, str]
     workers: Mapping[str, WorkerOutcome]
@@ -925,6 +927,7 @@ def _pipeline_result_from_checkpoint(
         or not isinstance(raw_workers, Mapping)
     ):
         raise ValueError("saved pipeline result is invalid")
+    pipeline_status = cast(PipelineStatus, pipeline_status)
     workers: dict[str, WorkerOutcome] = {}
     for key, raw in raw_workers.items():
         if key not in {"rag", "analyst", "retrieval"} or not isinstance(raw, Mapping):
@@ -937,6 +940,9 @@ def _pipeline_result_from_checkpoint(
             "unavailable",
         }:
             raise ValueError("saved pipeline worker status is invalid")
+        worker_status = cast(WorkerStatus, worker_status)
+        raw_trace_id = raw.get("trace_id")
+        raw_error_type = raw.get("error_type")
         workers[key] = WorkerOutcome(
             status=worker_status,
             output=(
@@ -944,10 +950,8 @@ def _pipeline_result_from_checkpoint(
                 if isinstance(raw.get("output", ""), str)
                 else ""
             ),
-            trace_id=(raw.get("trace_id")[:128] if isinstance(raw.get("trace_id"), str) else None),
-            error_type=(
-                raw.get("error_type")[:128] if isinstance(raw.get("error_type"), str) else None
-            ),
+            trace_id=raw_trace_id[:128] if isinstance(raw_trace_id, str) else None,
+            error_type=(raw_error_type[:128] if isinstance(raw_error_type, str) else None),
         )
     return PipelineResult(
         execution_id,

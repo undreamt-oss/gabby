@@ -56,9 +56,7 @@ def _signing_material() -> tuple[str, bytes, bytes]:
         signer = Ed25519PrivateKey.from_private_bytes(private_key)
         public_key = signer.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw)
     except ImportError as exc:
-        raise SkillPackageError(
-            "Install gabby-ai[skill-signing] to sign starter bundles"
-        ) from exc
+        raise SkillPackageError("Install gabby-ai[skill-signing] to sign starter bundles") from exc
     except (ValueError, TypeError) as exc:
         raise SkillPackageError(
             "Starter bundle signing key must be base64-encoded raw Ed25519"
