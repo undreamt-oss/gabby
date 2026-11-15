@@ -25,6 +25,7 @@ from typing import Any
 
 import pytest
 
+from gabby._sync import SyncCallbackPool
 from gabby.agent import Agent
 from gabby.auth import Principal
 from gabby.config import AgentDefinition, ConfigError, SandboxDefinition, SkillDefinition
@@ -2405,13 +2406,15 @@ async def test_timed_out_sync_tool_gets_cooperative_cancellation_signal() -> Non
 
 
 @pytest.mark.asyncio
-async def test_cancelled_run_signals_cooperative_sync_tool() -> None:
+async def test_cancelled_run_signals_cooperative_sync_tool(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     worker_started = threading.Event()
     cancellation_observed = threading.Event()
 
     def wait_for_cancellation(*, context: ToolContext) -> dict[str, bool]:
         worker_started.set()
-        if context.cancellation.wait(timeout=1):
+        if context.cancellation.wait(timeout=10):
             cancellation_observed.set()
         return {"cancelled": context.cancellation.is_cancelled}
 
@@ -2438,8 +2441,14 @@ async def test_cancelled_run_signals_cooperative_sync_tool() -> None:
         },
     )
 
+    # Keep this contract test independent from callbacks queued by other tests in
+    # the process-wide pool. Otherwise a slow Windows runner can exhaust the
+    # one-second startup window before this handler gets a worker.
+    pool = SyncCallbackPool(workers=1)
+    monkeypatch.setattr("gabby.runtime.run_sync_callback", pool.run)
+
     execution = asyncio.create_task(agent.arun("start the slow tool"))
-    for _ in range(100):
+    for _ in range(1000):
         if worker_started.is_set():
             break
         await asyncio.sleep(0.01)
@@ -2447,7 +2456,7 @@ async def test_cancelled_run_signals_cooperative_sync_tool() -> None:
     execution.cancel()
     with pytest.raises(asyncio.CancelledError):
         await execution
-    for _ in range(100):
+    for _ in range(1000):
         if cancellation_observed.is_set():
             break
         await asyncio.sleep(0.01)
