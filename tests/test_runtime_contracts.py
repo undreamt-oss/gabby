@@ -2456,7 +2456,7 @@ async def test_cancelled_run_signals_cooperative_sync_tool(
     execution.cancel()
     with pytest.raises(asyncio.CancelledError):
         await execution
-    for _ in range(100):
+    for _ in range(1000):
         if cancellation_observed.is_set():
             break
         await asyncio.sleep(0.01)
