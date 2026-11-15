@@ -750,7 +750,9 @@ def test_cli_trusted_key_rejects_truncation_during_open(
         return descriptor
 
     monkeypatch.setattr(os, "open", truncate_open_file)
-    with pytest.raises(ConfigError, match="must contain 32 raw bytes"):
+    # POSIX can read the already-open descriptor after truncation and report the short
+    # key length. Windows may detect the changed file metadata before reading it.
+    with pytest.raises(ConfigError, match="changed while loading|must contain 32 raw bytes"):
         _load_trusted_skill_keys([f"publisher={key_path}"])
 
 

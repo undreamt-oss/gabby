@@ -68,6 +68,20 @@ async def test_default_filter_redacts_sensitive_input_and_output() -> None:
     assert "sk-12345678901234567890" not in result.output
 
 
+def test_default_filter_normalizes_tuple_content_and_redacts_it() -> None:
+    payload_filter = DefaultPayloadFilter()
+
+    messages, tools = payload_filter.filter_request(
+        messages=[{"role": "assistant", "content": ("person@example.com",)}],
+        tools=[],
+        model="filter-test",
+        purpose="test",
+    )
+
+    assert messages == [{"role": "assistant", "content": ["[REDACTED_EMAIL]"]}]
+    assert tools == []
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
     "prompt",
@@ -186,6 +200,30 @@ async def test_default_stream_filter_preserves_split_json_object_keys_and_values
         "person@example.com": "[REDACTED_EMAIL]",
         "count": 42,
     }
+
+
+@pytest.mark.asyncio
+async def test_default_stream_filter_preserves_split_json_number_scalar() -> None:
+    class ChunkedFilterModel(FilterTestModel):
+        async def stream(self, **kwargs: Any) -> Any:
+            self.calls.append(kwargs)
+            yield ModelStreamDelta(content_delta="123")
+            yield ModelStreamDelta(content_delta="4567890")
+            yield ModelStreamDelta(finish_reason="stop")
+
+    provider = FilteredModelProvider(
+        ChunkedFilterModel("unused"), [DefaultPayloadFilter()], purpose="test"
+    )
+    deltas = [
+        delta
+        async for delta in provider.stream(
+            messages=[{"role": "user", "content": "Return the numeric result"}],
+            tools=[],
+            model="filter-test",
+        )
+    ]
+
+    assert "".join(delta.content_delta or "" for delta in deltas) == "1234567890"
 
 
 @pytest.mark.asyncio

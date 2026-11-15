@@ -239,9 +239,10 @@ class FilteredModelProvider:
                     first_content = default_stream_probe.lstrip()
                     if not first_content:
                         continue
-                    if first_content[0] in "{[":
-                        # Structured responses need a complete parse so object keys and JSON
-                        # value semantics are preserved. Plain text remains streamed below.
+                    if first_content[0] in '{["-0123456789':
+                        # Structured responses, including scalar numbers and strings, need a
+                        # complete parse so JSON types and values survive filtering. Plain text
+                        # remains streamed below.
                         default_stream_mode = "json"
                         continue
                     default_stream_mode = "text"
