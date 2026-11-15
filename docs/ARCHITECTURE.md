@@ -299,12 +299,17 @@ Execution traces are returned with each embedded result and included in `/run` a
 responses by default. HTTP callers can set `include_trace: false` to omit the trace body while
 keeping the trace ID; this does not disable an injected host tracer. Text model calls pass through a
 default payload filter that redacts common email, phone, and token patterns from outbound requests
-and user-facing response text and blocks simple direct instruction-override attempts in user or tool content. Hosts can
-add filters for their own data rules. These heuristics do not guarantee PII removal or detect every
-prompt injection, and do not replace data classification or provider controls. Ordinary built-in events record
-metadata such as input length, context keys, skill and tool names, argument keys, retrieval source
-identifiers, timing, and usage, rather than raw prompts, context values, tool arguments, or tool
-results. When planning is enabled, the trace includes each structured plan and plan revision.
+and user-facing response text and blocks simple direct instruction-override attempts in user or
+tool content. Plain-text stream fragments are redacted without parsing each fragment as a complete
+JSON document. JSON-shaped streamed responses are buffered and filtered once complete so JSON keys
+and structure are handled consistently. Plain-text patterns split across deltas may evade
+redaction. Host-supplied response filters run on the complete response before text or tool arguments
+are emitted. These heuristics do not guarantee PII
+removal or detect every prompt injection, and do not replace data classification or provider
+controls. Ordinary built-in events record metadata such as input length, context keys, skill and
+tool names, argument keys, retrieval source identifiers, timing, and usage, rather than raw prompts,
+context values, tool arguments, or tool results. When planning is enabled, the trace includes each
+structured plan and plan revision.
 Replanning is off by default; `policies.max_replans` accepts 0 through 3 and requires an injected
 planner. Each revision receives the preceding plan and at most 16 results from the latest tool
 batch, with each observation capped at 4 KiB. These excerpts are sent to the planner provider and

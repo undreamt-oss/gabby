@@ -205,9 +205,7 @@ class SignedAuditExporter:
         try:
             from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
         except ImportError as exc:
-            raise RuntimeError(
-                "Signed audit export requires gabby-ai[skill-signing]"
-            ) from exc
+            raise RuntimeError("Signed audit export requires gabby-ai[skill-signing]") from exc
         if not isinstance(private_key, bytes) or len(private_key) != 32:
             raise ValueError("private_key must be a 32-byte Ed25519 private key")
         self._key = Ed25519PrivateKey.from_private_bytes(private_key)

@@ -107,6 +107,6 @@ jobs:
       - run: uv run --no-sync pytest
       - run: uv build --out-dir dist
       - run: uv run --no-sync python scripts/check_package.py dist
-      - run: python -m pip install --no-deps --target "$RUNNER_TEMP/gabby-wheel" dist/*.whl
+      - run: python -m pip install --target "$RUNNER_TEMP/gabby-wheel" dist/*.whl
       - run: PYTHONPATH="$RUNNER_TEMP/gabby-wheel" python -c 'import gabby; assert all(hasattr(gabby, name) for name in ("AgentDefinition", "SkillDefinition", "ModelResponse"))'
       - run: uv run --no-sync pip-audit --skip-editable --progress-spinner off

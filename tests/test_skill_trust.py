@@ -17,14 +17,52 @@
 from __future__ import annotations
 
 import os
+import stat
 from pathlib import Path
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 
+from gabby._file_security import opened_file_matches_path
 from gabby.config import ConfigError, SkillDefinition
 from gabby.skill_packages import SkillPackageError
 from gabby.skill_trust import SkillTrustPolicy, load_skill_trust_keys
+
+
+def test_file_snapshot_uses_windows_identity_and_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    def snapshot(
+        *,
+        size: int = 32,
+        modified: float = 2.0,
+        device: int = 7,
+        inode: int = 11,
+        mode: int = stat.S_IFREG | 0o600,
+    ) -> os.stat_result:
+        return cast(
+            os.stat_result,
+            SimpleNamespace(
+                st_mode=mode,
+                st_size=size,
+                st_dev=device,
+                st_ino=inode,
+                st_mtime_ns=int(modified * 1_000_000_000),
+            ),
+        )
+
+    monkeypatch.setattr(os, "name", "nt")
+    original = snapshot()
+
+    assert opened_file_matches_path(original, snapshot())
+    assert not opened_file_matches_path(original, snapshot(mode=stat.S_IFDIR | 0o700))
+    assert not opened_file_matches_path(original, snapshot(size=33))
+    assert not opened_file_matches_path(original, snapshot(inode=12))
+    assert not opened_file_matches_path(original, snapshot(modified=4.0))
+
+    # Some filesystems do not expose stable file IDs; metadata remains the fallback.
+    fallback = snapshot(device=0, inode=0)
+    assert opened_file_matches_path(fallback, snapshot(device=0, inode=0))
+    assert not opened_file_matches_path(fallback, snapshot(device=0, inode=0, modified=4.0))
 
 
 @pytest.mark.parametrize(
@@ -173,7 +211,7 @@ def test_skill_trust_policy_rejects_key_growing_during_open(
         return original_open(path, flags, *args, **kwargs)
 
     monkeypatch.setattr(os, "open", grow_key_before_open)
-    with pytest.raises(ConfigError, match="must contain 32 raw bytes"):
+    with pytest.raises(ConfigError, match="changed while loading|must contain 32 raw bytes"):
         load_skill_trust_keys(directory)
 
 

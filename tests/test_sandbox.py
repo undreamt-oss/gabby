@@ -404,14 +404,14 @@ async def test_sandbox_session_cleans_partial_request_when_staging_fails(
         tool_input_host_path=str(tool_input_dir),
         tool_input_container_path="/tmp/gabby-tool-input",
     )
-    original_chmod = Path.chmod
+    original_write_bytes = Path.write_bytes
 
-    def fail_request_chmod(path: Path, mode: int) -> None:
+    def fail_request_write(path: Path, data: bytes) -> int:
         if path.parent == tool_input_dir:
-            raise OSError("chmod unavailable")
-        original_chmod(path, mode)
+            raise OSError("write unavailable")
+        return original_write_bytes(path, data)
 
-    monkeypatch.setattr(Path, "chmod", fail_request_chmod)
+    monkeypatch.setattr(Path, "write_bytes", fail_request_write)
     with pytest.raises(SandboxError, match="stage sandboxed tool input"):
         await session.invoke_tool(("tool",), {}, max_input_bytes=1024)
     assert list(tool_input_dir.iterdir()) == []

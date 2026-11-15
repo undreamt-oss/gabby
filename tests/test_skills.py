@@ -241,6 +241,20 @@ def test_skill_package_loads_conventional_markdown_instructions(tmp_path: Path) 
     assert agent.skills[0].instructions == "Keep source citations with each finding.\n"
 
 
+def test_skill_text_resources_normalize_cross_platform_newlines(tmp_path: Path) -> None:
+    agent_file = tmp_path / "agent.yaml"
+    agent_file.touch()
+    _write_skill(tmp_path, "research")
+    skill_dir = tmp_path / "skills" / "research"
+    (skill_dir / "instructions.md").write_bytes(b"First line.\r\nSecond line.\r")
+    (skill_dir / "examples.md").write_bytes(b"Example one.\r\nExample two.\n")
+
+    agent = Agent(_definition(agent_file, ["research"]), model=object())  # type: ignore[arg-type]
+
+    assert agent.skills[0].instructions == "First line.\nSecond line.\n"
+    assert agent.skills[0].examples == "Example one.\nExample two.\n"
+
+
 def test_skill_package_loads_a_declared_nested_instruction_file(tmp_path: Path) -> None:
     agent_file = tmp_path / "agent.yaml"
     agent_file.touch()

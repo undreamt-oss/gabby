@@ -18,7 +18,8 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import AsyncIterator, Sequence
-from typing import Any
+from dataclasses import replace
+from typing import Any, cast
 
 from .config import DEFAULT_MAX_MODEL_REQUEST_BYTES, DEFAULT_MAX_MODEL_RESPONSE_BYTES
 from .models import (
@@ -30,7 +31,7 @@ from .models import (
     ensure_model_request_size,
     ensure_model_response_size,
 )
-from .payload_filters import PayloadFilter
+from .payload_filters import DefaultPayloadFilter, PayloadFilter
 
 
 async def _apply_filters_request(
@@ -74,8 +75,9 @@ async def _apply_filters_response(
 class FilteredModelProvider:
     """Transparent provider wrapper that filters every request and response payload.
 
-    Streaming calls are buffered while filters run so no text or partial tool arguments escape
-    before response filters approve the complete model response.
+    The built-in default filter redacts each text delta as it arrives. Custom response filters are
+    buffered until the complete response is available so no unapproved text or partial tool
+    arguments escape before validation.
     """
 
     def __init__(
@@ -205,8 +207,14 @@ class FilteredModelProvider:
             if max_response_bytes is not None
             else DEFAULT_MAX_MODEL_RESPONSE_BYTES
         )
+        stream_default_filter = (
+            len(self._filters) == 1 and type(self._filters[0]) is DefaultPayloadFilter
+        )
         deltas: list[ModelStreamDelta] = []
+        default_stream_mode = "probing"
+        default_stream_probe = ""
         used_bytes = 0
+        emitted_bytes = 0
         async for delta in method(**kwargs):
             if not isinstance(delta, ModelStreamDelta):
                 raise TypeError("model provider returned a malformed stream delta")
@@ -219,7 +227,90 @@ class FilteredModelProvider:
                 raise ModelResponseSizeError(
                     f"Model response exceeded max_model_response_bytes={response_limit}"
                 )
-            deltas.append(delta)
+            if stream_default_filter:
+                if default_stream_mode == "json":
+                    deltas.append(delta)
+                    continue
+                if default_stream_mode == "probing":
+                    deltas.append(delta)
+                    if delta.content_delta is None:
+                        continue
+                    default_stream_probe += delta.content_delta
+                    first_content = default_stream_probe.lstrip()
+                    if not first_content:
+                        continue
+                    if first_content[0] in '{["-0123456789':
+                        # Structured responses, including scalar numbers and strings, need a
+                        # complete parse so JSON types and values survive filtering. Plain text
+                        # remains streamed below.
+                        default_stream_mode = "json"
+                        continue
+                    default_stream_mode = "text"
+                    buffered, deltas = deltas, []
+                    for buffered_delta in buffered:
+                        filtered_delta = self._filter_default_stream_delta(buffered_delta)
+                        emitted_bytes += _stream_delta_bytes(filtered_delta, response_limit)
+                        if emitted_bytes > response_limit:
+                            raise ModelResponseSizeError(
+                                f"Model response exceeded max_model_response_bytes={response_limit}"
+                            )
+                        yield filtered_delta
+                    continue
+                filtered_delta = self._filter_default_stream_delta(delta)
+                emitted_bytes += _stream_delta_bytes(filtered_delta, response_limit)
+                if emitted_bytes > response_limit:
+                    raise ModelResponseSizeError(
+                        f"Model response exceeded max_model_response_bytes={response_limit}"
+                    )
+                yield filtered_delta
+            elif self._filters:
+                deltas.append(delta)
+            else:
+                # With no filters there is nothing to approve at end-of-stream. Forward each
+                # bounded delta so retries and client cancellation retain their stream semantics.
+                yield delta
+        if stream_default_filter:
+            if default_stream_mode == "probing":
+                # Empty or whitespace-only content has no JSON document to parse.
+                default_stream_mode = "text"
+                buffered, deltas = deltas, []
+                for buffered_delta in buffered:
+                    filtered_delta = self._filter_default_stream_delta(buffered_delta)
+                    emitted_bytes += _stream_delta_bytes(filtered_delta, response_limit)
+                    if emitted_bytes > response_limit:
+                        raise ModelResponseSizeError(
+                            f"Model response exceeded max_model_response_bytes={response_limit}"
+                        )
+                    yield filtered_delta
+                return
+            if default_stream_mode == "text":
+                return
+            response = await _apply_filters_response(
+                self._filters,
+                response=_response_from_deltas(deltas),
+                purpose=self._purpose,
+            )
+            ensure_model_response_size(response, max_bytes=response_limit)
+            if response.content:
+                yield ModelStreamDelta(content_delta=response.content)
+            for index, tool_call in enumerate(response.tool_calls):
+                function = tool_call.get("function", {})
+                yield ModelStreamDelta(
+                    tool_call_index=index,
+                    tool_call_id=tool_call.get("id"),
+                    tool_name_delta=function.get("name"),
+                    tool_arguments_delta=function.get("arguments"),
+                    provider_metadata=tool_call.get("provider_metadata"),
+                )
+            last = deltas[-1] if deltas else None
+            yield ModelStreamDelta(
+                finish_reason=(last.finish_reason if last is not None else "stop"),
+                usage=(response.usage if response.usage else None),
+                provider_metadata=(last.provider_metadata if last is not None else None),
+            )
+            return
+        if not self._filters:
+            return
         response = await _apply_filters_response(
             self._filters, response=_response_from_deltas(deltas), purpose=self._purpose
         )
@@ -277,6 +368,18 @@ class FilteredModelProvider:
             raise ValueError(
                 f"Filtered model request exceeds configured size limit: {exc}"
             ) from exc
+
+    def _filter_default_stream_delta(self, delta: ModelStreamDelta) -> ModelStreamDelta:
+        if delta.content_delta is None:
+            return delta
+        default_filter = cast(DefaultPayloadFilter, self._filters[0])
+        filtered_content = default_filter.filter_stream_delta(
+            content_delta=delta.content_delta,
+            purpose=self._purpose,
+        )
+        if not isinstance(filtered_content, str):
+            raise TypeError("DefaultPayloadFilter.filter_stream_delta() must return str")
+        return replace(delta, content_delta=filtered_content)
 
 
 def _accepts_keyword(method: Any, name: str) -> bool:

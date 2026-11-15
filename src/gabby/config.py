@@ -22,7 +22,7 @@ import math
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from pathlib import Path, PureWindowsPath
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from types import MappingProxyType
 from typing import Any
 from urllib.parse import parse_qsl, urlsplit
@@ -1534,16 +1534,19 @@ def _load_skill_text_resource(
         raise ConfigError(f"skill.{file_field} must be a non-empty relative path")
     if inline.strip():
         raise ConfigError(f"Specify either skill.{inline_field} or skill.{file_field}, not both")
+    posix_path = PurePosixPath(resource_file)
     windows_path = PureWindowsPath(resource_file)
-    relative_path = Path(resource_file)
     if (
-        relative_path.is_absolute()
+        posix_path.is_absolute()
         or windows_path.is_absolute()
+        or windows_path.root
         or windows_path.drive
         or "\\" in resource_file
-        or ".." in relative_path.parts
+        or not posix_path.parts
+        or ".." in posix_path.parts
     ):
         raise ConfigError(f"skill.{file_field} must stay inside the skill package")
+    relative_path = Path(*posix_path.parts)
     skill_root = source.parent.resolve()
     resolved_file = (skill_root / relative_path).resolve()
     try:
@@ -1560,7 +1563,9 @@ def _load_skill_text_resource(
     if len(contents) > _MAX_SKILL_TEXT_BYTES:
         raise ConfigError(f"Skill {file_field} exceeds the {_MAX_SKILL_TEXT_BYTES}-byte limit")
     try:
-        return contents.decode("utf-8")
+        # Skill text is a portable text contract. Normalize Windows and classic-Mac line
+        # endings so the same package yields identical prompt text on every host OS.
+        return contents.decode("utf-8").replace("\r\n", "\n").replace("\r", "\n")
     except UnicodeDecodeError as exc:
         raise ConfigError(
             f"Skill {file_field} file could not be read as UTF-8: {resource_file}"

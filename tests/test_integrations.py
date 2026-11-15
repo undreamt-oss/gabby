@@ -18,6 +18,7 @@ import asyncio
 import json
 import sys
 import threading
+from concurrent.futures import Future
 from types import SimpleNamespace
 from typing import Any, cast
 
@@ -34,6 +35,18 @@ from gabby.tracing import (
     SignedAuditExporter,
     TraceEvent,
 )
+
+
+class _InlineExecutor:
+    """Keep exporter format tests deterministic; async offloading has separate coverage."""
+
+    def submit(self, function: Any, /, *args: Any, **kwargs: Any) -> Future[Any]:
+        future: Future[Any] = Future()
+        try:
+            future.set_result(function(*args, **kwargs))
+        except BaseException as exc:
+            future.set_exception(exc)
+        return future
 
 
 @pytest.mark.asyncio
@@ -300,7 +313,12 @@ def test_otel_adapter_exports_safe_attributes_only() -> None:
     }
 
 
-def test_signed_audit_chain_records_policy_and_persona_without_payloads(tmp_path: Any) -> None:
+def test_signed_audit_chain_records_policy_and_persona_without_payloads(
+    tmp_path: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import gabby.tracing as tracing_module
+
+    monkeypatch.setattr(tracing_module, "_TRACE_IO_EXECUTOR", _InlineExecutor())
     cryptography = pytest.importorskip("cryptography.hazmat.primitives.asymmetric.ed25519")
     key = cryptography.Ed25519PrivateKey.generate()
     raw_key = key.private_bytes_raw()
@@ -314,8 +332,6 @@ def test_signed_audit_chain_records_policy_and_persona_without_payloads(tmp_path
             task = asyncio.create_task(
                 exporter.on_event(trace_id="trace-1", agent_name="test-agent", event=event)
             )
-            await asyncio.sleep(0.01)
-            assert task.done()
             await task
 
         await record_with_tick(
@@ -455,6 +471,9 @@ def test_tool_worker_load_handler_requires_importable_callable(monkeypatch: Any)
 def test_lf_trace_exporter_signs_tool_transcript_and_correlates_audit(
     tmp_path: Any, monkeypatch: Any
 ) -> None:
+    import gabby.tracing as tracing_module
+
+    monkeypatch.setattr(tracing_module, "_TRACE_IO_EXECUTOR", _InlineExecutor())
     signed_records: list[dict[str, Any]] = []
 
     def sign_record(record: dict[str, Any], key: Any) -> dict[str, Any]:
@@ -478,8 +497,6 @@ def test_lf_trace_exporter_signs_tool_transcript_and_correlates_audit(
             task = asyncio.create_task(
                 exporter.on_event(trace_id="trace-2", agent_name="test-agent", event=event)
             )
-            await asyncio.sleep(0.01)
-            assert task.done()
             await task
 
         await dispatch(TraceEvent("tool_call", details={"name": "search"}))
@@ -520,8 +537,6 @@ def test_lf_trace_exporter_cleans_failed_runs_and_drops_overflowed_traces(
             task = asyncio.create_task(
                 exporter.on_event(trace_id=trace_id, agent_name="test", event=event)
             )
-            await asyncio.sleep(0.01)
-            assert task.done()
             await task
 
         await dispatch("cancelled", TraceEvent("tool_call"))
