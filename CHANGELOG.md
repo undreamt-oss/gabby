@@ -21,7 +21,7 @@ published releases use dated version headings.
 
 ## Unreleased
 
-### Planned 0.1.0 beta (`0.1.0b3`)
+### Planned 0.1.0 beta (`0.1.0b5`)
 
 - Renamed the Python distribution to `gabby-ai`; the import package and CLI remain `gabby`.
 - Removed Gabby's local Transformers model, embedding, and reranking loaders. Model execution now

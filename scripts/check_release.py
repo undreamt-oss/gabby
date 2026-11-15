@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def main() -> int:
     """Check a supplied v-prefixed tag against the project metadata."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("tag", help="Git tag to validate, for example v0.1.0b3")
+    parser.add_argument("tag", help="Git tag to validate, for example v0.1.0b5")
     arguments = parser.parse_args()
 
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
