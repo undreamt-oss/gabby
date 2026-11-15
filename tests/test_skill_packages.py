@@ -1142,7 +1142,12 @@ def test_install_rejects_nonportable_archive_paths(tmp_path: Path, unsafe_path: 
         assert archive_bytes.count(encoded_path) == 2
         malicious_path.write_bytes(archive_bytes.replace(encoded_path, unsafe_path.encode("utf-8")))
 
-    with pytest.raises(SkillPackageError, match="invalid file path|safe relative paths|portable"):
+    # zipfile normalizes raw backslashes to forward slashes when reading on Windows. The archive
+    # still fails closed because its normalized member no longer matches the signed manifest.
+    message = "invalid file path|safe relative paths|portable"
+    if os.name == "nt" and "\\" in unsafe_path:
+        message += "|manifest does not match archive contents"
+    with pytest.raises(SkillPackageError, match=message):
         install_skill(malicious_path, tmp_path / "registry")
 
 

@@ -30,15 +30,23 @@ from gabby.skill_packages import SkillPackageError
 from gabby.skill_trust import SkillTrustPolicy, load_skill_trust_keys
 
 
-def test_file_snapshot_fallback_for_windows_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
-    def snapshot(*, size: int = 32, modified: float = 2.0, changed: float = 3.0) -> os.stat_result:
+def test_file_snapshot_uses_windows_identity_and_metadata(monkeypatch: pytest.MonkeyPatch) -> None:
+    def snapshot(
+        *,
+        size: int = 32,
+        modified: float = 2.0,
+        device: int = 7,
+        inode: int = 11,
+        mode: int = stat.S_IFREG | 0o600,
+    ) -> os.stat_result:
         return cast(
             os.stat_result,
             SimpleNamespace(
-                st_mode=stat.S_IFREG | 0o600,
+                st_mode=mode,
                 st_size=size,
+                st_dev=device,
+                st_ino=inode,
                 st_mtime_ns=int(modified * 1_000_000_000),
-                st_ctime_ns=int(changed * 1_000_000_000),
             ),
         )
 
@@ -46,9 +54,15 @@ def test_file_snapshot_fallback_for_windows_metadata(monkeypatch: pytest.MonkeyP
     original = snapshot()
 
     assert opened_file_matches_path(original, snapshot())
+    assert not opened_file_matches_path(original, snapshot(mode=stat.S_IFDIR | 0o700))
     assert not opened_file_matches_path(original, snapshot(size=33))
+    assert not opened_file_matches_path(original, snapshot(inode=12))
     assert not opened_file_matches_path(original, snapshot(modified=4.0))
-    assert not opened_file_matches_path(original, snapshot(changed=4.0))
+
+    # Some filesystems do not expose stable file IDs; metadata remains the fallback.
+    fallback = snapshot(device=0, inode=0)
+    assert opened_file_matches_path(fallback, snapshot(device=0, inode=0))
+    assert not opened_file_matches_path(fallback, snapshot(device=0, inode=0, modified=4.0))
 
 
 @pytest.mark.parametrize(

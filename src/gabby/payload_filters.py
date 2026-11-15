@@ -153,6 +153,16 @@ class DefaultPayloadFilter:
             raw=_transform_strings(response.raw, redact_sensitive_text),
         )
 
+    def filter_stream_delta(self, *, content_delta: str, purpose: str) -> str:
+        """Redact one text fragment without treating it as a complete JSON document.
+
+        Stream fragments are not response boundaries. Parsing each fragment as JSON can rewrite
+        whitespace or object keys, so structured JSON is passed through this text-only redactor.
+        Patterns split across fragments remain subject to the documented streaming limitation.
+        """
+        del purpose
+        return redact_sensitive_text(content_delta)
+
 
 def validate_payload_filters(filters: Sequence[PayloadFilter] | None) -> tuple[PayloadFilter, ...]:
     """Snapshot host-supplied filters and validate their callable contracts."""

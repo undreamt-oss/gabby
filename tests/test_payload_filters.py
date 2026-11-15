@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import pytest
@@ -106,6 +107,85 @@ async def test_default_filter_redacts_each_streamed_text_delta() -> None:
     assert "person@example.com" not in text
     assert "[REDACTED_EMAIL]" in text
     assert deltas == ["Contact ", "[REDACTED_EMAIL]", " for help"]
+
+
+@pytest.mark.asyncio
+async def test_default_stream_filter_preserves_fragment_whitespace_and_numeric_text() -> None:
+    class ChunkedFilterModel(FilterTestModel):
+        async def stream(self, **kwargs: Any) -> Any:
+            self.calls.append(kwargs)
+            yield ModelStreamDelta(content_delta="There are")
+            yield ModelStreamDelta(content_delta=" 42")
+            yield ModelStreamDelta(content_delta=" items")
+            yield ModelStreamDelta(finish_reason="stop")
+
+    provider = FilteredModelProvider(
+        ChunkedFilterModel("unused"), [DefaultPayloadFilter()], purpose="test"
+    )
+    deltas = [
+        delta
+        async for delta in provider.stream(
+            messages=[{"role": "user", "content": "Count"}],
+            tools=[],
+            model="filter-test",
+        )
+    ]
+
+    assert "".join(delta.content_delta or "" for delta in deltas) == "There are 42 items"
+
+
+@pytest.mark.asyncio
+async def test_default_stream_filter_preserves_whitespace_only_stream() -> None:
+    class WhitespaceModel(FilterTestModel):
+        async def stream(self, **kwargs: Any) -> Any:
+            self.calls.append(kwargs)
+            yield ModelStreamDelta(content_delta="  ")
+            yield ModelStreamDelta(finish_reason="stop")
+
+    provider = FilteredModelProvider(
+        WhitespaceModel("unused"), [DefaultPayloadFilter()], purpose="test"
+    )
+    deltas = [
+        delta
+        async for delta in provider.stream(
+            messages=[{"role": "user", "content": "Keep formatting"}],
+            tools=[],
+            model="filter-test",
+        )
+    ]
+
+    assert "".join(delta.content_delta or "" for delta in deltas) == "  "
+
+
+@pytest.mark.asyncio
+async def test_default_stream_filter_preserves_split_json_object_keys_and_values() -> None:
+    class ChunkedFilterModel(FilterTestModel):
+        async def stream(self, **kwargs: Any) -> Any:
+            self.calls.append(kwargs)
+            yield ModelStreamDelta(content_delta='{"person@example.com":')
+            yield ModelStreamDelta(content_delta=' "person@example.com",')
+            yield ModelStreamDelta(content_delta='"count":')
+            yield ModelStreamDelta(content_delta=" 42")
+            yield ModelStreamDelta(content_delta="}")
+            yield ModelStreamDelta(finish_reason="stop")
+
+    provider = FilteredModelProvider(
+        ChunkedFilterModel("unused"), [DefaultPayloadFilter()], purpose="test"
+    )
+    deltas = [
+        delta
+        async for delta in provider.stream(
+            messages=[{"role": "user", "content": "Count"}],
+            tools=[],
+            model="filter-test",
+        )
+    ]
+
+    result = json.loads("".join(delta.content_delta or "" for delta in deltas))
+    assert result == {
+        "person@example.com": "[REDACTED_EMAIL]",
+        "count": 42,
+    }
 
 
 @pytest.mark.asyncio
