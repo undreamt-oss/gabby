@@ -132,7 +132,7 @@ The generated starter uses a placeholder model and grants no tools by default. A
 
 ## Project status
 
-Gabby is pre-1.0 beta software (`0.1.0b1`). Public extension APIs may change before v1.0. Local tests and static checks establish only the behaviors they exercise; they do not certify a hosted deployment, every provider/model pairing, or every container host and engine combination. Review the [release notes](CHANGELOG.md), [readiness scorecard](docs/PROJECT_SCORECARD.md), and [threat model](docs/THREAT_MODEL.md) before evaluating it for sensitive or production workloads.
+Gabby is pre-1.0 beta software (`0.1.0b3`). Public extension APIs may change before v1.0. Local tests and static checks establish only the behaviors they exercise; they do not certify a hosted deployment, every provider/model pairing, or every container host and engine combination. Review the [release notes](CHANGELOG.md), [readiness scorecard](docs/PROJECT_SCORECARD.md), and [threat model](docs/THREAT_MODEL.md) before evaluating it for sensitive or production workloads.
 
 ## Open source and contributing
 

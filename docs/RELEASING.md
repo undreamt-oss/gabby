@@ -26,7 +26,7 @@ receives a separate OIDC token only after those checks pass and the `pypi` GitHu
 approves the deployment.
 
 The first alpha was published as PEP 440 version `0.1.0a1`, corresponding to Git tag
-`v0.1.0a1`. The current planned beta uses version `0.1.0b1` and matching tag `v0.1.0b1`.
+`v0.1.0a1`. The current planned beta uses version `0.1.0b3` and matching tag `v0.1.0b3`.
 Both are Python pre-releases; package installers may require consumers to opt in to pre-release
 versions. The final `0.1.0` version remains reserved for a later stable release after beta feedback
 and compatibility decisions are addressed.
@@ -49,7 +49,7 @@ for configuring the external trust relationship.
 1. Update `project.version` in `pyproject.toml` and add the release heading and notes to
    `CHANGELOG.md`.
 2. Merge the release commit into `main` and wait for normal CI to pass.
-3. Create and push the matching annotated tag, such as `v0.1.0b1`, on that commit. Python
+3. Create and push the matching annotated tag, such as `v0.1.0b3`, on that commit. Python
    pre-releases use PEP 440 versions so installers can distinguish them from final releases and
    normally require an explicit pre-release opt-in.
 4. The Release workflow repeats platform tests and quality gates for the tagged source, confirms the

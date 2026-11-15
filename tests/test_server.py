@@ -1170,6 +1170,8 @@ async def test_fastapi_sse_keepalive_and_disconnect_cancel_provider_stream(
     monkeypatch.setattr("gabby.server._SSE_KEEPALIVE_INTERVAL_SECONDS", 0.01)
     provider_started = asyncio.Event()
     provider_cancelled = asyncio.Event()
+    disconnect = asyncio.Event()
+    sent: list[Message] = []
 
     class BlockingStreamModel:
         name = "blocking-stream"
@@ -1196,18 +1198,57 @@ async def test_fastapi_sse_keepalive_and_disconnect_cancel_provider_stream(
         for route in app.routes
         if isinstance(route, APIRoute) and route.path == "/v1/agents/{agent_name}/stream"
     )
+
+    async def receive() -> Message:
+        await disconnect.wait()
+        return {"type": "http.disconnect"}
+
+    async def send(message: Message) -> None:
+        sent.append(message)
+        if message["type"] != "http.response.body":
+            return
+        streamed = b"".join(
+            item.get("body", b"") for item in sent if item["type"] == "http.response.body"
+        )
+        if all(
+            marker in streamed for marker in (b"event: run_started", b"first chunk", b": keepalive")
+        ):
+            disconnect.set()
+
+    scope = cast(
+        Scope,
+        {
+            "type": "http",
+            "asgi": {"version": "3.0", "spec_version": "2.0"},
+            "http_version": "1.1",
+            "method": "POST",
+            "scheme": "http",
+            "path": "/v1/agents/test-agent/stream",
+            "raw_path": b"/v1/agents/test-agent/stream",
+            "query_string": b"",
+            "root_path": "",
+            "headers": [],
+            "client": ("127.0.0.1", 12345),
+            "server": ("test", 80),
+        },
+    )
+
     async with app.router.lifespan_context(app):
         response = await stream_route.endpoint(
             "test-agent", RunPayload(input="hello"), _request_with_principal()
         )
-        body = response.body_iterator
-        assert b"event: run_started" in await anext(body)
-        chunk = (await anext(body)).decode("utf-8")
-        assert "first chunk" in chunk
-        assert provider_started.is_set()
-        assert await anext(body) == b": keepalive\n\n"
-        await body.aclose()
-        await asyncio.wait_for(provider_cancelled.wait(), timeout=1)
+        # Exercise the transport's disconnect cancellation instead of directly closing the
+        # response iterator, which bypasses Starlette's response task lifecycle.
+        await asyncio.wait_for(response(scope, receive, send), timeout=5)
+        await asyncio.wait_for(provider_cancelled.wait(), timeout=2)
+
+    streamed = b"".join(
+        message.get("body", b"") for message in sent if message["type"] == "http.response.body"
+    )
+    assert b"event: run_started" in streamed
+    assert b"first chunk" in streamed
+    assert b": keepalive\n\n" in streamed
+    assert provider_started.is_set()
 
 
 @pytest.mark.asyncio
