@@ -20,15 +20,23 @@ This guide explains how to use Gabby's agent runtime and governance capabilities
 
 ## Install
 
+Install Gabby from PyPI:
+
+```sh
+python -m pip install gabby-ai
+```
+
+The distribution is named `gabby-ai`, while Python code imports `gabby` and the CLI command is
+`gabby`. Install optional features with extras, such as `python -m pip install
+"gabby-ai[server,auth]"` for the HTTP server and JWT authentication.
+
+For local development inside the repository, install the locked contributor environment instead:
+
 ```sh
 uv sync --frozen --group dev --extra server --extra auth
 ```
 
 Use `uv run` for project commands so the locked virtual environment is selected consistently. The `server` extra installs Uvicorn for `gabby serve`; embedded users can install the core package without the server process.
-
-When the alpha package is published, install this pre-release explicitly with
-`python -m pip install --pre gabby-ai`. Pip excludes pre-release versions from ordinary
-version selection unless a pre-release is requested; see the [Python Packaging User Guide](https://packaging.python.org/en/latest/discussions/versioning/).
 
 ## Define an agent
 
