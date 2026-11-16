@@ -89,9 +89,18 @@ Gabby’s controls are not all enabled by default. Skill signing is optional, sa
 
 ## Quick start
 
-Clone the repository and install Gabby from the checkout in editable mode. This installs the
-distribution as `gabby-ai`, while the Python import and command-line tool remain `gabby`. Editable
-installation means changes you make in this checkout are used immediately:
+Install the published package from PyPI with:
+
+```sh
+python -m pip install gabby-ai
+```
+
+The PyPI distribution is named `gabby-ai`; the Python import and command-line tool remain
+`gabby`. Add an extra when you need optional functionality, for example
+`python -m pip install "gabby-ai[server,auth]"` to run the HTTP server with JWT authentication.
+
+To work on Gabby's source code, clone the repository and install the checkout in editable mode.
+Changes made in the checkout will then be used immediately:
 
 ```sh
 git clone https://github.com/undreamt-oss/gabby.git
