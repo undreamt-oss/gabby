@@ -1,35 +1,19 @@
-<!--
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+<div align="center">
 
-     https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-
-Copyright 2026-present Gabby Contributors.
--->
+<img width="200" height="200" alt="Gabby Logo" src="https://github.com/user-attachments/assets/e586a825-3c98-4a33-adec-08aed1263315" />
 
 # Gabby
 
-<div align="center">
+**An Agent Runtime and Governance Framework**
 
-<img width="512" height="512" alt="gabby-logo" src="https://github.com/user-attachments/assets/e586a825-3c98-4a33-adec-08aed1263315" />
+Gabby enables developers to define agent capabilities, enforce tool-use policies, and execute model-driven tasks within explicit operational boundaries. It combines reusable agent and skill definitions with policy enforcement, human-in-the-loop approvals, bounded tool execution, and auditable traces—operating on a stateless runtime where the host application retains ownership of conversation history and durable state.
 
-### An Agent Runtime and Governance Framework
-
-Gabby helps developers define what an AI agent can do, govern how it uses tools, and execute each request within explicit limits. It combines reusable agent and skill definitions with policy checks, optional approvals and verification, bounded tool execution, and traceable results. Gabby is stateless between runs: the consuming application owns conversation history and durable user state.
-
-[![Python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15741/badge)](https://www.bestpractices.dev/projects/15741)
 
-[Documentation](docs/index.md) · [Architecture](docs/ARCHITECTURE.md) · [Quick start](#quick-start) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
+[Documentation](docs/index.md) · [Architecture](docs/ARCHITECTURE.md) · [Quick Start](#quick-start) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
 </div>
 
