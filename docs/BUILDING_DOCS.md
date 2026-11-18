@@ -16,10 +16,11 @@ Copyright 2026-present Gabby Contributors.
 
 # Build and preview the documentation
 
-The documentation site is built from the Markdown files in `docs/` with MkDocs and its built-in
-Read the Docs theme. Read the Docs uses the repository-level `.readthedocs.yaml` configuration and
-installs only the documentation dependencies from `docs/requirements.txt`; it does not install
-Gabby or its runtime dependencies to build the site.
+The documentation site is built from the Markdown files in `docs/` with MkDocs and Material for
+MkDocs. Its colors and typography follow the [Undreamt website](https://undreamt.in/). Read the Docs
+uses the repository-level `.readthedocs.yaml` configuration and installs only the documentation
+dependencies from `docs/requirements.txt`; it does not install Gabby or its runtime dependencies to
+build the site.
 
 ## Preview locally
 
@@ -55,9 +56,15 @@ using the isolated documentation requirements. Enable builds for the branch or t
 publish; the default version is generally the `latest` branch build.
 
 The site uses Read the Docs' canonical URL when that environment value is available. Local builds
-and other hosts fall back to `https://docs.undreamt.in/gabby/`. Configure that custom domain or URL
-route in the hosting provider's project settings; the repository configuration cannot create DNS
-records or claim a domain on its own.
+and other hosts fall back to `https://docs.undreamt.in/`.
+
+To serve Gabby at this subdomain, add `docs.undreamt.in` under the project's **Admin → Domains**
+settings in Read the Docs and mark it canonical. Then add the CNAME record Read the Docs provides
+to the `undreamt.in` DNS zone. For Read the Docs Community, the target is `readthedocs.io`; in
+Cloudflare, set the record to **DNS only** (proxy disabled). Use the target shown in the Read the
+Docs dashboard if it differs. This configures the `docs` subdomain while leaving the apex domain
+and `www` records in place. The zone export in `undreamt.in.txt` is archival guidance, not a file
+to upload directly to production DNS.
 
 For each published version, review the Read the Docs build log and open the resulting site to check
 navigation, search, code blocks, and internal links. Keep the generated `site/` directory out of Git.
