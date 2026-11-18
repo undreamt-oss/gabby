@@ -1,0 +1,56 @@
+site_name: Gabby
+site_description: Documentation for the Gabby agent governance and execution runtime.
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, https://docs.undreamt.in/gabby/]
+repo_url: https://github.com/undreamt-oss/gabby
+edit_uri: edit/main/docs/
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: readthedocs
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Start here:
+      - User guide: README_GUIDE.md
+      - HTTP client: CLIENT.md
+      - Build and preview this site: BUILDING_DOCS.md
+  - Concepts:
+      - Architecture: ARCHITECTURE.md
+      - Host-orchestrated pipelines: HOST_ORCHESTRATED_PIPELINES.md
+      - Extension contracts: EXTENSION_CONTRACTS.md
+      - Extension guide: EXTENSIONS.md
+      - API stability: API_STABILITY.md
+      - Compatibility proposal: COMPATIBILITY.md
+      - Architecture decisions: architecture/adr/README.md
+  - Capabilities:
+      - Approvals: APPROVALS.md
+      - Structured output: STRUCTURED_OUTPUT.md
+      - Skills and registry: SKILL_REGISTRY.md
+      - SQLite data tool: SQLITE_DATA.md
+      - Sandboxed Python tool: PYTHON_TOOL.md
+      - Integrations: INTEGRATIONS.md
+  - Operate securely:
+      - Threat model: THREAT_MODEL.md
+      - Operations: OPERATIONS.md
+      - Scaling: SCALING_AND_OPERATIONS.md
+      - Container deployment: DEPLOYMENT_CONTAINER.md
+      - Kubernetes deployment: DEPLOYMENT_KUBERNETES.md
+  - Project:
+      - Readiness scorecard: PROJECT_SCORECARD.md
+      - OpenSSF audit: OPENSSF_AUDIT.md
+      - Repository governance: REPOSITORY_GOVERNANCE.md
+      - AI usage: AI_USAGE.md
+      - Releasing: RELEASING.md

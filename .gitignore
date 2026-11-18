@@ -13,6 +13,8 @@
 # Copyright 2026-present Gabby Contributors.
 
 .venv/
+.venv-docs/
+site/
 .python-version
 __pycache__/
 *.py[cod]
