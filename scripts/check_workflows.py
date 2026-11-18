@@ -301,6 +301,35 @@ def main() -> int:
             "Attest release distributions"
         ):
             failures.append("Release archives must pass package inspection before attestation.")
+        release_wheel_install = (
+            'python -m pip install --target "$RUNNER_TEMP/gabby-wheel" dist/*.whl'
+        )
+        release_wheel_import = (
+            'PYTHONPATH="$RUNNER_TEMP/gabby-wheel" python -c '
+            "'import gabby; assert all(hasattr(gabby, name) for name in "
+            '("AgentDefinition", "SkillDefinition", "ModelResponse"))\''
+        )
+        for command in (release_wheel_install, release_wheel_import):
+            if command not in build_job:
+                failures.append(
+                    "Release build job must install and import the built wheel before attestation."
+                )
+        if (
+            release_archive_check in build_job
+            and release_wheel_install in build_job
+            and build_job.index(release_archive_check) > build_job.index(release_wheel_install)
+        ):
+            failures.append("Release wheel installation must follow package archive inspection.")
+        if (
+            release_wheel_install in build_job
+            and release_wheel_import in build_job
+            and build_job.index(release_wheel_install) > build_job.index(release_wheel_import)
+        ):
+            failures.append("Release wheel import must follow installation of the wheel.")
+        if release_wheel_import in build_job and build_job.index(
+            release_wheel_import
+        ) > build_job.index("Attest release distributions"):
+            failures.append("Release wheel import must pass before distribution attestation.")
 
     security_path = workflow_dir / "security.yml"
     if not security_path.is_file():

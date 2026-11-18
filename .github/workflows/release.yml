@@ -179,6 +179,10 @@ jobs:
       - run: uv build --out-dir dist
       - name: Verify release archive contents and license
         run: python scripts/check_package.py dist
+      - name: Install and import the release wheel
+        run: |
+          python -m pip install --target "$RUNNER_TEMP/gabby-wheel" dist/*.whl
+          PYTHONPATH="$RUNNER_TEMP/gabby-wheel" python -c 'import gabby; assert all(hasattr(gabby, name) for name in ("AgentDefinition", "SkillDefinition", "ModelResponse"))'
       - name: Attest release distributions
         uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
