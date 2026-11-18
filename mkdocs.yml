@@ -1,13 +1,40 @@
 site_name: Gabby
 site_description: Documentation for the Gabby agent governance and execution runtime.
-site_url: !ENV [READTHEDOCS_CANONICAL_URL, https://docs.undreamt.in/gabby/]
+site_url: !ENV [READTHEDOCS_CANONICAL_URL, https://docs.undreamt.in/]
 repo_url: https://github.com/undreamt-oss/gabby
 edit_uri: edit/main/docs/
 docs_dir: docs
 site_dir: site
 
 theme:
-  name: readthedocs
+  name: material
+  logo: https://undreamt.in/assets/aistudio/logo_babccb65.png
+  font:
+    text: Plus Jakarta Sans
+    code: JetBrains Mono
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  palette:
+    - scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+    - scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to dark mode
 
 plugins:
   - search
@@ -20,6 +47,24 @@ markdown_extensions:
   - tables
   - toc:
       permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+extra_css:
+  - stylesheets/undreamt.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/undreamt-oss/gabby
+      name: Gabby on GitHub
+  generator: false
 
 nav:
   - Home: index.md
