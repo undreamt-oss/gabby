@@ -135,3 +135,8 @@ and orchestration adapters.
 Gabby is maintained in the [undreamt-oss](https://github.com/undreamt-oss) organization. Contributions are welcome across runtime behavior, providers, documentation, examples, accessibility, security, and developer experience.
 
 Before contributing, read the [contributing guide](CONTRIBUTING.md), [governance](GOVERNANCE.md), and [security policy](SECURITY.md). See the [documentation index](docs/index.md) for architecture, extension contracts, operations, and release guidance.
+
+## Featured On
+
+[![GabbyAI on OSSDrop](https://ossdrop.com/badge/gabby)](https://ossdrop.com/tool/gabby)
+
