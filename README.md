@@ -12,6 +12,7 @@ Gabby enables developers to define agent capabilities, enforce tool-use policies
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15741/badge)](https://www.bestpractices.dev/projects/15741)
+[![GabbyAI on OSSDrop](https://ossdrop.com/badge/gabby)](https://ossdrop.com/tool/gabby)
 
 [Documentation](docs/index.md) · [Architecture](docs/ARCHITECTURE.md) · [Quick Start](#quick-start) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
